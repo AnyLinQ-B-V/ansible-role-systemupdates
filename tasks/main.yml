@@ -1,2 +1,33 @@
 ---
-# tasks file for ansibletemplate
+# tasks file for systemupdates
+
+- name: "Gather facts"
+  setup:
+
+- name: Run RedHat part
+  block:
+    - name: Upgrade all packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+    - name: Autoremove unneeded packages installed as dependencies
+      ansible.builtin.dnf:
+        autoremove: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Run Debian part
+  block:
+    - name: Run the equivalent of "apt-get update"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    - name: Upgrade the system
+      ansible.builtin.apt:
+        upgrade: {{ update_apt_method }}
+    - name: Autoremove useless packages from the cache
+      ansible.builtin.apt:
+        autoclean: yes
+    - name: Autoremove dependencies that are no longer required
+      ansible.builtin.apt:
+        autoremove: yes
+  when: ansible_os_family == "Debian"

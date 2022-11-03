@@ -1,2 +1,3 @@
 ---
-# defaults file for ansibletemplate
+# defaults file for systemupdates
+update_apt_method: full
