@@ -23,7 +23,7 @@
         cache_valid_time: 3600
     - name: Upgrade the system
       ansible.builtin.apt:
-        upgrade: {{ update_apt_method }}
+        upgrade: "{{ update_apt_method }}"
     - name: Autoremove useless packages from the cache
       ansible.builtin.apt:
         autoclean: yes
