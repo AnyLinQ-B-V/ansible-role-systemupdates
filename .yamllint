@@ -2,10 +2,15 @@
 extends: default
 
 rules:
-  line-length:
-    max: 120
-    level: warning
-
-ignore: |
-  .github/stale.yml
-  .github/ISSUE_TEMPLATE/config.yml
+  braces:
+    max-spaces-inside: 1
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+  # Disable line length checking
+  line-length: disable
+  # Disable truthy value checking (yes/no vs true/false)
+  truthy: disable

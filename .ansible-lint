@@ -12,8 +12,10 @@ exclude_paths:
   - ./.cache
   - ./.github
   - ./requirements.yml
+
+# Rules to be skipped
 skip_list:
-  - 'yaml'
-  - 'role-name'
-  - 'experimental'
-  - 'line-length'
+  - 'yaml'               # Skip YAML syntax checking (already done by yamllint)
+  - 'role-name'          # Skip role name checking
+  - 'experimental'       # Skip experimental rules
+  - 'line-length'        # Skip line length checking

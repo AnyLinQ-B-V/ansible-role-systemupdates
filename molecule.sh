@@ -12,4 +12,4 @@ cd molecule
 molecule test
 
 # Run tests on Debian.
-MOLECULE_DISTRO=debian10 molecule test
+MOLECULE_DISTRO=debian12 molecule test

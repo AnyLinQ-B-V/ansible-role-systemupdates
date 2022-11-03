@@ -1,2 +1,39 @@
 ---
-# tasks file for ansibletemplate
+# tasks file for systemupdates
+
+- name: "Gather facts"
+  ansible.builtin.setup:
+
+- name: Update apt packages
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == 'Debian'
+  register: apt_update_status
+  become: true
+
+- name: Run autoremove for apt
+  ansible.builtin.apt:
+    autoremove: true
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - apt_update_status.changed
+  become: true
+
+- name: Update dnf packages  # noqa: package-latest
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: true
+  when: ansible_facts['os_family'] == 'RedHat'
+  register: dnf_update_status
+  become: true
+
+- name: Run autoremove for dnf
+  ansible.builtin.dnf:
+    autoremove: true
+  when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - dnf_update_status.changed
+  become: true

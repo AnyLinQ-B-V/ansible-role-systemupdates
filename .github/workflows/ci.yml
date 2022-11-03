@@ -4,33 +4,39 @@ name: CI
   pull_request:
   push:
     branches:
+      - main
 
 defaults:
   run:
-    working-directory: 'anylinq.ansibletemplate'
+    working-directory: 'anylinq.systemupdates'
 
 jobs:
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the codebase.
-        uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v4
         with:
-          path: 'anylinq.ansibletemplate'
+          path: 'anylinq.systemupdates'
 
-      - name: Set up Python 3.
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install test dependencies.
-        run: pip3 install yamllint ansible-lint
-
-      - name: Lint code.
+      - name: Install dependencies
         run: |
-          yamllint .
+          python -m pip install --upgrade pip
+          pip install yamllint ansible-lint
+
+      - name: Run yamllint
+        run: yamllint .
+        working-directory: anylinq.systemupdates
+
+      - name: Run ansible-lint
+        run: ansible-lint
+        working-directory: anylinq.systemupdates
 
   molecule:
     name: Molecule
@@ -38,26 +44,66 @@ jobs:
     strategy:
       matrix:
         distro:
-          - rockylinux8
-          - debian11
+          - debian12
 
     steps:
-      - name: Check out the codebase.
-        uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v4
         with:
-          path: 'anylinq.ansibletemplate'
+          path: 'anylinq.systemupdates'
 
-      - name: Set up Python 3.
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install test dependencies.
-        run: pip3 install ansible ansible-lint molecule[docker] docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          version: latest
 
-      - name: Run Molecule tests.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "molecule>=5.0" "molecule-plugins[docker]" "ansible-core>=2.12" docker
+
+      - name: Run molecule test
         run: molecule test
+        working-directory: anylinq.systemupdates
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
           MOLECULE_DISTRO: ${{ matrix.distro }}
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+
+  galaxy:
+    name: Import to Galaxy
+    needs: [lint, molecule]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          path: 'anylinq.systemupdates'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core
+
+      - name: Trigger Galaxy import
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          ansible-galaxy role import \
+            --api-key ${{ secrets.GALAXY_API_KEY }} \
+            ${REPO_OWNER} ${REPO_NAME}
+        working-directory: anylinq.systemupdates

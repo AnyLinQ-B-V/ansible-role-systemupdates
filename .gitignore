@@ -1,8 +1,19 @@
+# Ansible
 *.retry
-*.pyc
-*/__pycache__
-__pycache__
-.venv
-*.log
-.vscode
-.cache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Molecule
+.molecule/
+.cache/
+.tox/
+
+# Lock files
+*.lock
+.*.lock
+
+# OS specific
+.DS_Store

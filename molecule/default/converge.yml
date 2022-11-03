@@ -2,8 +2,6 @@
 - name: Converge
   hosts: all
   become: true
-  collections:
-    - community.general
   tasks:
     - name: Run role
       ansible.builtin.include_role:

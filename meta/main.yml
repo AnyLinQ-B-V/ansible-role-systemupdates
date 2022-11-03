@@ -1,26 +1,25 @@
 ---
 galaxy_info:
-  author: Jou naam hier
+  author: Ronny Roethof <ronny@roethof.net>
   namespace: anylinq
-  role_name: ansibletemplate
-  description: Jou omschrijving hier
+  role_name: systemupdates
+  description: Ansible role to update apt and dnf
   company: AnyLinQ B.V.
 
-  issue_tracker_url: https://github.com/AnyLinQ-B-V/template-ansible-role/issues
+  issue_tracker_url: https://github.com/AnyLinQ-B-V/ansible-role-systemupdates/issues
 
   license: MIT
 
-  min_ansible_version: 2.1
+  min_ansible_version: "2.10"
 
   platforms:
-    - name: EL
-      versions:
-        - 8
-        - 9
     - name: Debian
       versions:
-        - bullseye
+        - bookworm
 
-  galaxy_tags: []
+  galaxy_tags:
+    - system
+    - updates
+    - security
 
 dependencies: []
