@@ -10,6 +10,7 @@
       ansible.builtin.dnf:
         name: "*"
         state: latest
+      register: updates
     - name: Autoremove unneeded packages installed as dependencies
       ansible.builtin.dnf:
         autoremove: yes
@@ -24,6 +25,7 @@
     - name: Upgrade the system
       ansible.builtin.apt:
         upgrade: "{{ update_apt_method }}"
+      register: updates
     - name: Autoremove useless packages from the cache
       ansible.builtin.apt:
         autoclean: yes

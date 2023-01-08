@@ -1,3 +1,6 @@
 ---
 # defaults file for systemupdates
 update_apt_method: full
+update_opnsense_force: false
+update_opnsense_wait_for_reboot_minor: 120
+update_opnsense_wait_for_reboot_major: 1800
