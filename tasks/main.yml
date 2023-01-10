@@ -11,9 +11,11 @@
         name: "*"
         state: latest
       register: updates
+      notify: Discord change notification
     - name: Autoremove unneeded packages installed as dependencies
       ansible.builtin.dnf:
         autoremove: yes
+      notify: Discord cleanup notification
   when: ansible_os_family == "RedHat"
 
 - name: Run Debian part
@@ -26,10 +28,12 @@
       ansible.builtin.apt:
         upgrade: "{{ update_apt_method }}"
       register: updates
+      notify: Discord change notification
     - name: Autoremove useless packages from the cache
       ansible.builtin.apt:
         autoclean: yes
     - name: Autoremove dependencies that are no longer required
       ansible.builtin.apt:
         autoremove: yes
+      notify: Discord cleanup notification
   when: ansible_os_family == "Debian"

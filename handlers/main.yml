@@ -1,2 +1,31 @@
 ---
 # handlers file for systemupdates
+- name: Discord change notification
+  community.general.discord:
+    webhook_id: "{{ discord_webhook_id }}"
+    webhook_token: "{{ discord_token }}"
+    embeds:
+      - title: "System updates: {{ inventory_hostname  }}"
+        description: "[{{ inventory_hostname }}] updates zijn uitgevoerd door ansible"
+        footer:
+          text: "Author: Ansible"
+        image:
+          url: "https://docs.ansible.com/ansible/latest/_static/images/logo_invert.png"
+  when:
+    - discord_webhook_id is defined
+    - discord_token is defined
+
+- name: Discord cleanup notification
+  community.general.discord:
+    webhook_id: "{{ discord_webhook_id }}"
+    webhook_token: "{{ discord_token }}"
+    embeds:
+      - title: "System packages cleanup: {{ inventory_hostname  }}"
+        description: "[{{ inventory_hostname }}] oude packages zijn opgeruimd door ansible"
+        footer:
+          text: "Author: Ansible"
+        image:
+          url: "https://docs.ansible.com/ansible/latest/_static/images/logo_invert.png"
+  when:
+    - discord_webhook_id is defined
+    - discord_token is defined
