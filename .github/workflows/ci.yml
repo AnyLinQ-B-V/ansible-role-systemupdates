@@ -32,19 +32,20 @@ jobs:
 
       - name: Run yamllint
         run: yamllint .
-        working-directory: anylinq.systemupdates
 
       - name: Run ansible-lint
         run: ansible-lint
-        working-directory: anylinq.systemupdates
 
   molecule:
     name: Molecule
+    needs: [lint]  # Add dependency on lint job
     runs-on: ubuntu-latest
     strategy:
       matrix:
         distro:
           - debian12
+          - ubuntu2404
+      fail-fast: false
 
     steps:
       - name: Check out code
@@ -76,6 +77,8 @@ jobs:
           ANSIBLE_FORCE_COLOR: '1'
           MOLECULE_DISTRO: ${{ matrix.distro }}
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          ANSIBLE_REMOTE_USER: root
+          MOLECULE_NO_LOG: false
 
   galaxy:
     name: Import to Galaxy

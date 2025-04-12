@@ -3,7 +3,7 @@ galaxy_info:
   author: Ronny Roethof <ronny@roethof.net>
   namespace: anylinq
   role_name: systemupdates
-  description: Ansible role to update apt and dnf
+  description: Ansible role to manage system updates across multiple Linux distributions
   company: AnyLinQ B.V.
 
   issue_tracker_url: https://github.com/AnyLinQ-B-V/ansible-role-systemupdates/issues
@@ -15,11 +15,24 @@ galaxy_info:
   platforms:
     - name: Debian
       versions:
-        - bookworm
+        - bookworm    # Debian 12
+        - trixie      # Debian 13
+    - name: Ubuntu
+      versions:
+        - jammy       # 22.04 LTS
+        - noble       # 24.04 LTS
+    - name: EL
+      versions:
+        - "9"         # RHEL/Rocky 9
 
   galaxy_tags:
     - system
     - updates
     - security
+    - maintenance
+    - packages
+    - apt
+    - dnf
+    - yum
 
 dependencies: []

@@ -1,2 +1,15 @@
 ---
 # defaults file for systemupdates
+
+# General settings
+systemupdates_autoremove: true
+systemupdates_only_upgrade: false
+
+# Apt specific settings
+systemupdates_upgrade_type: "dist"  # safe, full, or dist
+systemupdates_cache_valid_time: 3600
+systemupdates_autoclean: true
+
+# DNF specific settings
+systemupdates_security_only: false
+systemupdates_bugfix: true
