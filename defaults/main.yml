@@ -13,3 +13,5 @@ systemupdates_autoclean: true
 # DNF specific settings
 systemupdates_security_only: false
 systemupdates_bugfix: true
+
+systemupdates_enforce_serial_execution: true

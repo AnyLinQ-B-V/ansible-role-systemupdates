@@ -1,6 +1,20 @@
 ---
 # tasks file for systemupdates
 
+- name: "Ensure role is run serially to protect clustered services"
+  ansible.builtin.fail:
+    msg: |
+      The 'systemupdates' role is configured to enforce serial execution
+      to prevent simultaneous reboots in a cluster.
+      This play is attempting to run on {{ ansible_play_batch | length }} host(s)
+      concurrently in this batch: {{ ansible_play_batch }}.
+      Please set 'serial: 1' in your playbook for the play targeting these hosts.
+      To disable this check (not recommended for quorum-based clusters),
+      set 'systemupdates_enforce_serial_execution: false' when calling the role.
+  when:
+    - systemupdates_enforce_serial_execution | default(true)
+    - (ansible_play_batch | length) > 1
+
 - name: "Gather facts"
   ansible.builtin.setup:
 
@@ -17,6 +31,7 @@
         only_upgrade: "{{ systemupdates_only_upgrade | default(false) }}"
         autoclean: "{{ systemupdates_autoclean | default(true) }}"
       register: apt_update_status
+      notify: Handle conditional reboot
 
     - name: DEB - Run autoremove for apt
       ansible.builtin.apt:
@@ -34,6 +49,11 @@
   when: ansible_facts['os_family'] == 'RedHat'
   become: true
   block:
+    - name: RHEL - Ensure dnf-utils is installed (for needs-restarting)
+      ansible.builtin.dnf:
+        name: dnf-utils
+        state: present
+
     - name: RHEL - Update dnf packages  # noqa: package-latest
       ansible.builtin.dnf:
         name: "*"
@@ -42,6 +62,7 @@
         security: "{{ systemupdates_security_only | default(false) }}"
         bugfix: "{{ systemupdates_bugfix | default(true) }}"
       register: dnf_update_status
+      notify: Handle conditional reboot
 
     - name: RHEL - Run autoremove for dnf
       ansible.builtin.dnf:
