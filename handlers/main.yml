@@ -1,33 +1,33 @@
 ---
 # handlers file for systemupdates
 
-- name: Handle conditional reboot
+- name: "Handle conditional reboot"
   become: true
   block:
-    - name: Check if reboot is required on Debian/Ubuntu
+    - name: "Check if reboot is required on Debian/Ubuntu"
       ansible.builtin.stat:
         path: /var/run/reboot-required
       register: reboot_required_file_deb
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Check if reboot is required on RHEL/CentOS/Fedora
+    - name: "Check if reboot is required on RHEL/CentOS/Fedora"
       ansible.builtin.command: needs-restarting -r
       register: reboot_required_cmd_rhel
       changed_when: false
       failed_when: false # Command exits 1 if reboot needed, 0 otherwise.
       when: ansible_facts['os_family'] == 'RedHat'
 
-    - name: Set reboot_needed fact for Debian
+    - name: "Set reboot_needed fact for Debian"
       ansible.builtin.set_fact:
         reboot_is_needed: "{{ reboot_required_file_deb.stat.exists | default(false) }}"
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Set reboot_needed fact for RHEL
+    - name: "Set reboot_needed fact for RHEL"
       ansible.builtin.set_fact:
         reboot_is_needed: "{{ reboot_required_cmd_rhel.rc == 1 if reboot_required_cmd_rhel is defined else false }}"
       when: ansible_facts['os_family'] == 'RedHat'
 
-    - name: Perform reboot if needed
+    - name: "Perform reboot if needed"
       ansible.builtin.reboot:
         msg: "Rebooting server due to system updates."
         reboot_timeout: 3600 # Adjust as needed (seconds)
