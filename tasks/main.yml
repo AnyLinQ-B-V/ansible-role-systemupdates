@@ -42,7 +42,7 @@
       when: "'db' not in inventory_hostname"
       register: apt_update_status
       notify: "Check if reboot is required"
-    
+
     - name: DEB - Include MariaDB Galera upgrade tasks
       when: "'db' in inventory_hostname and 'mariadb_upgrade' in ansible_run_tags"
       ansible.builtin.include_tasks: mariadb_upgrade.yml
