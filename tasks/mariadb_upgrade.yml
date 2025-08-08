@@ -1,0 +1,46 @@
+---
+# tasks file for handling MariaDB Galera upgrades
+
+- name: Stop the MariaDB service gracefully
+  ansible.builtin.service:
+    name: mariadb
+    state: stopped
+  # It's okay if the service is already stopped.
+  ignore_errors: true
+
+- name: Check and force stop of lingering mariadbd processes
+  ansible.builtin.command: pkill -9 mariadbd
+  # This command is a safeguard. It should not fail the play if no process is found,
+  # nor should it report a change.
+  failed_when: false
+  changed_when: false
+
+- name: Perform the MariaDB-specific package upgrade
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - mariadb-server
+    - mariadb-client
+
+- name: Start the MariaDB service
+  ansible.builtin.service:
+    name: mariadb
+    state: started
+    enabled: true
+
+- name: Wait until MariaDB is running and ready for requests
+  ansible.builtin.command: mysqladmin ping
+  register: mariadb_ping
+  until: mariadb_ping.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Wait until the Galera node is fully synchronized
+  ansible.builtin.command: mysql -NBe "SHOW STATUS LIKE 'wsrep_local_state_comment';"
+  register: galera_sync_check
+  until: "'Synced' in galera_sync_check.stdout"
+  retries: 120
+  delay: 10
+  changed_when: false
