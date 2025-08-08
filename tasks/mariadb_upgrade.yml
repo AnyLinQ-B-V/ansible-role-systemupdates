@@ -5,8 +5,14 @@
   ansible.builtin.service:
     name: mariadb
     state: stopped
-  # It's okay if the service is already stopped.
-  ignore_errors: true
+  register: stop_mariadb_result
+  # The task should not fail if the service is already stopped or does not exist.
+  # `state: stopped` is idempotent for already-stopped services.
+  # We only ignore failures where the message indicates the service unit was not found.
+  failed_when: >-
+    stop_mariadb_result.failed and
+    'not found' not in stop_mariadb_result.msg | lower and
+    'not loaded' not in stop_mariadb_result.msg | lower
 
 - name: Check and force stop of lingering mariadbd processes
   ansible.builtin.command: pkill -9 mariadbd
@@ -18,7 +24,7 @@
 - name: Perform the MariaDB-specific package upgrade
   ansible.builtin.package:
     name: "{{ item }}"
-    state: latest
+    state: latest  # noqa package-latest
   loop:
     - mariadb-server
     - mariadb-client

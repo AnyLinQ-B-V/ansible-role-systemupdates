@@ -63,7 +63,7 @@
     - name: RHEL - Update dnf packages
       ansible.builtin.dnf:
         name: "*"
-        state: latest
+        state: latest  # noqa package-latest
         update_cache: true
         security: "{{ systemupdates_security_only | default(false) }}"
         bugfix: "{{ systemupdates_bugfix | default(true) }}"
