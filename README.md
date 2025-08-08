@@ -45,9 +45,24 @@ None.
 ## Example Playbook
 
 ```yaml
-- hosts: servers
+- name: 01 - Voer generieke systeemupdates uit op alle servers
+  hosts: all
+  become: yes
+  serial: 1
+  vars:
+    # Voeg mariadb uit aan de generieke update om conflicten te voorkomen
+    systemupdates_apt_exclude_packages:
+      - mariadb-server*
+      - mariadb-client*
   roles:
     - anylinq.systemupdates
+
+- name: 02 - MariaDB Galera Cluster upgrade procedure
+  hosts: galera_cluster # De groep waar je Galera nodes in zitten
+  become: yes
+  serial: 1 # Cruciaal: één node tegelijk!
+  tags:
+    - mariadb_upgrade
 ```
 
 ## Testing

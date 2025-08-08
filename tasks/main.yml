@@ -18,20 +18,66 @@
 - name: "Gather facts"
   ansible.builtin.setup:
 
-# Debian/Ubuntu systems
 - name: Manage Debian family updates
   when: ansible_facts['os_family'] == 'Debian'
   become: true
   block:
-    - name: DEB - Update apt packages
+    - name: DEB - Update apt packages, excluding MariaDB on Galera hosts
       ansible.builtin.apt:
         upgrade: "{{ systemupdates_upgrade_type | default('dist') }}"
         update_cache: true
         cache_valid_time: "{{ systemupdates_cache_valid_time | default(3600) }}"
         only_upgrade: "{{ systemupdates_only_upgrade | default(false) }}"
         autoclean: "{{ systemupdates_autoclean | default(true) }}"
+        # The 'name' parameter with '*' is not compatible with the 'upgrade' parameter.
+        # The most flexible way is to manage the Galera upgrade separately.
+      when: "'db' not in inventory_hostname"
       register: apt_update_status
       notify: "Check if reboot is required"
+    
+    - name: DEB - Perform the MariaDB Galera upgrade
+      when: "'db' in inventory_hostname and 'mariadb_upgrade' in ansible_run_tags"
+      block:
+        - name: DEB - Stop the MariaDB service gracefully
+          ansible.builtin.service:
+            name: mariadb
+            state: stopped
+          ignore_errors: yes
+
+        - name: DEB - Check and force stop of lingering mariadbd processes
+          ansible.builtin.command: pkill -9 mariadbd
+          when: "'mariadbd' in ansible.builtin.shell.run("ps aux").stdout"
+          ignore_errors: yes
+          failed_when: false
+
+        - name: DEB - Perform the MariaDB-specific apt upgrade
+          ansible.builtin.apt:
+            name: "{{ item }}"
+            state: latest
+          loop:
+            - mariadb-server
+            - mariadb-client
+          tags: mariadb_upgrade
+
+        - name: DEB - Start the MariaDB service
+          ansible.builtin.service:
+            name: mariadb
+            state: started
+            enabled: yes
+
+        - name: DEB - Wait until MariaDB is running and ready for SQL requests
+          ansible.builtin.shell: systemctl status mariadb.service | grep 'Taking your SQL requests now...'
+          register: service_status_check
+          until: service_status_check.rc == 0
+          retries: 30
+          delay: 10
+
+        - name: DEB - Wait until the Galera node is fully synchronized
+          ansible.builtin.command: mysql -NBe "SHOW STATUS LIKE 'wsrep_local_state_comment';"
+          register: galera_sync_check
+          until: "'Synced' in galera_sync_check.stdout"
+          retries: 120
+          delay: 10
 
     - name: DEB - Run autoremove for apt
       ansible.builtin.apt:
@@ -44,7 +90,6 @@
       ansible.builtin.debug:
         msg: "Failed to update Debian system: {{ ansible_failed_task.name }}"
 
-# RedHat/CentOS/Fedora systems
 - name: Manage RedHat family updates
   when: ansible_facts['os_family'] == 'RedHat'
   become: true
@@ -54,15 +99,60 @@
         name: dnf-utils
         state: present
 
-    - name: RHEL - Update dnf packages  # noqa: package-latest
+    - name: RHEL - Update dnf packages
       ansible.builtin.dnf:
         name: "*"
         state: latest
         update_cache: true
         security: "{{ systemupdates_security_only | default(false) }}"
         bugfix: "{{ systemupdates_bugfix | default(true) }}"
+      when: "'db' not in inventory_hostname"
       register: dnf_update_status
       notify: "Check if reboot is required"
+
+    - name: RHEL - Perform the MariaDB Galera upgrade
+      when: "'db' in inventory_hostname and 'mariadb_upgrade' in ansible_run_tags"
+      block:
+        - name: RHEL - Stop the MariaDB service gracefully
+          ansible.builtin.service:
+            name: mariadb
+            state: stopped
+          ignore_errors: yes
+
+        - name: RHEL - Check and force stop of lingering mariadbd processes
+          ansible.builtin.command: pkill -9 mariadbd
+          when: "mariadbd" in ansible.builtin.shell.run("ps aux").stdout
+          ignore_errors: yes
+          failed_when: false
+
+        - name: RHEL - Perform the MariaDB-specific dnf upgrade
+          ansible.builtin.dnf:
+            name: "{{ item }}"
+            state: latest
+          loop:
+            - mariadb-server
+            - mariadb-client
+          tags: mariadb_upgrade
+
+        - name: RHEL - Start the MariaDB service
+          ansible.builtin.service:
+            name: mariadb
+            state: started
+            enabled: yes
+
+        - name: RHEL - Wait until MariaDB is running and ready for SQL requests
+          ansible.builtin.shell: systemctl status mariadb.service | grep 'Taking your SQL requests now...'
+          register: service_status_check
+          until: service_status_check.rc == 0
+          retries: 30
+          delay: 10
+
+        - name: RHEL - Wait until the Galera node is fully synchronized
+          ansible.builtin.command: mysql -NBe "SHOW STATUS LIKE 'wsrep_local_state_comment';"
+          register: galera_sync_check
+          until: "'Synced' in galera_sync_check.stdout"
+          retries: 120
+          delay: 10
 
     - name: RHEL - Run autoremove for dnf
       ansible.builtin.dnf:
